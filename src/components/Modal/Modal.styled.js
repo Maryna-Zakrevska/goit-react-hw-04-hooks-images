@@ -9,7 +9,7 @@ const OverlayStyled = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.75);
   z-index: 1200;
 `;
 
