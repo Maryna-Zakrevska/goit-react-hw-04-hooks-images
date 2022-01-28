@@ -1,11 +1,5 @@
 import React from "react";
-import { Puff } from 'react-loading-icons'
-import {LoaderDivStyled} from "./Loader.styled"
-
+import { LoaderStyled } from "./Loader.styled";
 export const Loader = () => {
-  return (
-    <LoaderDivStyled>
-      <Puff stroke="#3f51b5" strokeOpacity={.125} speed={.75} />
-    </LoaderDivStyled>
-  );
+  return <LoaderStyled stroke="#3F51B5" strokeOpacity={0.125} speed={0.75} />;
 };

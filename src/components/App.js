@@ -94,12 +94,14 @@ export default function App() {
           No results for <b>"{searchQuery}"</b>. Please type correct search query
         </NoResultsMessageStyled>
       )}
-      {showGallery && ( <ImageGallery images={images} onOpenModal={openModal} />)}
-      {isLoading && <Loader/>}
+      <ImageGallery images={images} onOpenModal={openModal} />
+      {isLoading && <Loader />}
 
-      {showGallery && (<Button hasNextPage={hasNextPage} onLoadMoreImages={loadMoreImages}>
-            Load More
-          </Button>)}
+      {showGallery && (
+        <Button hasNextPage={hasNextPage} onLoadMoreImages={loadMoreImages}>
+          Load More
+        </Button>
+      )}
       {needToOpenModal && (
         <Modal onClose={toggleModal}>
           <CloseButtonStyled type="button" onClick={toggleModal}>
