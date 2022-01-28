@@ -35,39 +35,29 @@ export default function App() {
   const firstRender = useRef(true);
 
   useEffect(() => {
-    if (firstRender.current) {firstRender.current = false; return;}
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     const getImagesOnSearchSubmit = () => {
       setStatus(Status.PENDING);
       getImages(searchQuery, page)
         .then(({ hits, totalHits }) => {
-          setImages(hits);
-          setTotalHits(totalHits);
+          if (page === 1) {
+            setImages(hits);
+            setTotalHits(totalHits);
+          } else {
+            setImages((images) => [...images, ...hits]);
+          }
           setStatus(Status.RESOLVED);
         })
-        .catch(error => {
+        .catch((error) => {
           setError(error);
           setStatus(Status.REJECTED);
         });
     };
     getImagesOnSearchSubmit();
-  }, [searchQuery, page]); 
-
-  useEffect(() => {
-    if (page === 1) return;
-    const getImagesOnLoadMore = () => {
-      setStatus(Status.PENDING);
-      getImages(searchQuery, page)
-        .then(({ hits }) => {
-          setImages(images => [...images, ...hits]);
-          setStatus(Status.RESOLVED);
-        })
-        .catch(error => {
-          setError(error);
-          setStatus(Status.REJECTED);
-        });
-    };
-    getImagesOnLoadMore();
-  }, [page, searchQuery]);
+  }, [searchQuery, page]);
 
   const searchQuerySubmit = (inputQuery) => {
     if (searchQuery !== inputQuery) {
@@ -90,30 +80,26 @@ export default function App() {
   };
 
   const showGallery = images?.length > 0;
-  const isError = error || (!showGallery&&status === Status.RESOLVED) || status === Status.REJECTED;
+  const isError =
+    error || (!showGallery && status === Status.RESOLVED) || status === Status.REJECTED;
   const isLoading = status === Status.PENDING;
   const hasNextPage = totalHits > page * perPage;
   const needToOpenModal = showModal && Object.keys(showModal).length > 0;
 
-  console.log('App ~ isLoading', images);
-
   return (
     <AppDivStyled>
       <Searchbar onSubmit={searchQuerySubmit} />
-      {isLoading && <Loader />}
       {isError && (
         <NoResultsMessageStyled>
           No results for <b>"{searchQuery}"</b>. Please type correct search query
         </NoResultsMessageStyled>
       )}
-      {showGallery && (
-        <>
-          <ImageGallery images={images} onOpenModal={openModal} />
-          <Button hasNextPage={hasNextPage} onLoadMoreImages={loadMoreImages}>
+      {showGallery && ( <ImageGallery images={images} onOpenModal={openModal} />)}
+      {isLoading && <Loader/>}
+
+      {showGallery && (<Button hasNextPage={hasNextPage} onLoadMoreImages={loadMoreImages}>
             Load More
-          </Button>
-        </>
-      )}
+          </Button>)}
       {needToOpenModal && (
         <Modal onClose={toggleModal}>
           <CloseButtonStyled type="button" onClick={toggleModal}>
