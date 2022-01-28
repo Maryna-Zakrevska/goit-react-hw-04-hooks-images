@@ -1,54 +1,57 @@
-import PropTypes from 'prop-types';
-import React, { Component } from 'react';
-import { toast } from 'react-toastify';
-import { FaSearch } from 'react-icons/fa';
-import {SearchbarStyled, SearchFormStyled, SearchFormButtonStyled, SearchFormButtonSpanStyled, SearchFormInputStyled, SearchFormButtonLabelStyled} from "./Searchbar.styled";
+import PropTypes from "prop-types";
+import React, { useState } from "react";
+import { toast } from "react-toastify";
+import { FaSearch } from "react-icons/fa";
+import {
+  SearchbarStyled,
+  SearchFormStyled,
+  SearchFormButtonStyled,
+  SearchFormButtonSpanStyled,
+  SearchFormInputStyled,
+  SearchFormButtonLabelStyled,
+} from "./Searchbar.styled";
 
-export class Searchbar extends Component {
-  static propTypes = {
-    onSubmit: PropTypes.func,
+export default function Searchbar({ onSubmit, status }) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const inputQueryChange = (e) => {
+    setSearchQuery(e.target.value.toLowerCase());
   };
-  state = {
-    searchQuery: '',
-  };
-  inputQueryChange = e => {
-    this.setState({ searchQuery: e.target.value.toLowerCase() });
-  };
-  formSubmit = e => {
+
+  const formSubmit = (e) => {
     e.preventDefault();
-    const formQuery = this.state.searchQuery.trim();
-    if (formQuery === '') {
-      toast.error('Заполните поле поиска');
+    const formQuery = searchQuery.trim();
+    if (formQuery === "") {
+      toast.error("Заполните поле поиска");
       return;
     }
-    this.props.onSubmit(formQuery);
-    this.setState({ searchQuery: '' });
+    onSubmit(formQuery);
+    setSearchQuery("");
   };
-  render() {
-    const { searchQuery } = this.state;
-    return (
-        <SearchbarStyled >
-          <SearchFormStyled onSubmit={this.formSubmit}>
-            <SearchFormButtonLabelStyled>
-              <SearchFormInputStyled
-                name="searchQuery"
-                value={searchQuery}
-                onChange={this.inputQueryChange}
-                type="text"
-                autoComplete="off"
-                autoFocus
-                placeholder="Search images and photos"
-              />
-            </SearchFormButtonLabelStyled>
-            <SearchFormButtonStyled
-              type="submit"
-              disabled={this.props.status === 'pending'}
-            >
-              <FaSearch/>
-              <SearchFormButtonSpanStyled>Search</SearchFormButtonSpanStyled>
-            </SearchFormButtonStyled>
-          </SearchFormStyled>
-        </SearchbarStyled>
-    );
-  }
+
+  return (
+    <SearchbarStyled>
+      <SearchFormStyled onSubmit={formSubmit}>
+        <SearchFormButtonLabelStyled>
+          <SearchFormInputStyled
+            name="searchQuery"
+            value={searchQuery}
+            onChange={inputQueryChange}
+            type="text"
+            autoComplete="off"
+            autoFocus
+            placeholder="Search images and photos"
+          />
+        </SearchFormButtonLabelStyled>
+        <SearchFormButtonStyled type="submit" disabled={status === "pending"}>
+          <FaSearch />
+          <SearchFormButtonSpanStyled>Search</SearchFormButtonSpanStyled>
+        </SearchFormButtonStyled>
+      </SearchFormStyled>
+    </SearchbarStyled>
+  );
 }
+
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func,
+};

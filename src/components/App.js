@@ -1,10 +1,10 @@
-import React, { Component } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getImages } from "servises/api";
-import { Searchbar } from "./Searchbar/Searchbar";
+import Searchbar from "./Searchbar/Searchbar";
 import { ImageGallery } from "./ImageGallery/ImageGallery";
 import { Button } from "./Button/Button";
 import { Loader } from "./Loader/Loader";
-import { Modal } from "./Modal/Modal";
+import Modal from "./Modal/Modal";
 import { ToastContainer } from "react-toastify";
 import { AiOutlineClose } from "react-icons/ai";
 import {
@@ -22,139 +22,107 @@ const Status = {
   REJECTED: "rejected",
 };
 
-export class App extends Component {
-  state = {
-    searchQuery: "",
-    page: 1,
-    perPage: 12,
-    images: [],
-    showModal: false,
-    status: Status.IDLE,
-    error: null,
-    totalHits: null,
+const perPage = 12;
+
+export default function App() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [images, setImages] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [status, setStatus] = useState(Status.IDLE);
+  const [error, setError] = useState(null);
+  const [totalHits, setTotalHits] = useState(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    if (firstRender.current) {firstRender.current = false; return;}
+    const getImagesOnSearchSubmit = () => {
+      setStatus(Status.PENDING);
+      getImages(searchQuery, page)
+        .then(({ hits, totalHits }) => {
+          setImages(hits);
+          setTotalHits(totalHits);
+          setStatus(Status.RESOLVED);
+        })
+        .catch(error => {
+          setError(error);
+          setStatus(Status.REJECTED);
+        });
+    };
+    getImagesOnSearchSubmit();
+  }, [searchQuery, page]); 
+
+  useEffect(() => {
+    if (page === 1) return;
+    const getImagesOnLoadMore = () => {
+      setStatus(Status.PENDING);
+      getImages(searchQuery, page)
+        .then(({ hits }) => {
+          setImages(images => [...images, ...hits]);
+          setStatus(Status.RESOLVED);
+        })
+        .catch(error => {
+          setError(error);
+          setStatus(Status.REJECTED);
+        });
+    };
+    getImagesOnLoadMore();
+  }, [page, searchQuery]);
+
+  const searchQuerySubmit = (inputQuery) => {
+    if (searchQuery !== inputQuery) {
+      setSearchQuery(inputQuery);
+      setPage(1);
+      setError(null);
+    }
   };
 
-  componentDidUpdate(_, prevState) {
-    const prevQuery = prevState.searchQuery;
-    const nextQuery = this.state.searchQuery;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-    const prevShowModal = prevState.showModal;
-    const nextShowModal = this.state.showModal;
-
-    if (prevQuery !== nextQuery) {
-      this.setState({ page: 1, status: Status.PENDING });
-
-      getImages(nextQuery, nextPage)
-        .then(({ hits, totalHits }) =>
-          this.setState({ images: hits, totalHits: totalHits, status: Status.RESOLVED }),
-        )
-        .catch((error) => this.setState({ error: error, status: Status.REJECTED }));
-    }
-
-    if (prevPage < nextPage) {
-      getImages(prevQuery, nextPage)
-        .then(({ hits }) =>
-          this.setState(({ images }) => ({
-            images: [...images, ...hits],
-            status: Status.RESOLVED,
-          })),
-        )
-        .catch((error) => this.setState({ error: error, status: Status.REJECTED }));
-    }
-
-    if (prevShowModal !== nextShowModal && !Object.keys(nextShowModal).length) {
-      window.removeEventListener("keydown", this.onEscCloseModal);
-    }
-  }
-
-  searchQuerySubmit = (inputQuery) => {
-    const prevQuery = this.state.searchQuery;
-    if (prevQuery !== inputQuery) {
-      this.setState({ searchQuery: inputQuery, page: 1 });
-    }
+  const loadMoreImages = () => {
+    setPage((page) => page + 1);
   };
 
-  loadMoreImages = () => {
-    this.setState(({ page }) => {
-      return { page: page + 1 };
-    });
+  const openModal = (showModal) => {
+    setShowModal(showModal);
   };
 
-  openModal = (showModal) => {
-    this.setState({ showModal });
+  const toggleModal = () => {
+    setShowModal((showModal) => !showModal);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
-  };
+  const showGallery = images?.length > 0;
+  const isError = error || (!showGallery&&status === Status.RESOLVED) || status === Status.REJECTED;
+  const isLoading = status === Status.PENDING;
+  const hasNextPage = totalHits > page * perPage;
+  const needToOpenModal = showModal && Object.keys(showModal).length > 0;
 
-  render() {
-    const { images, status, totalHits, page, perPage, showModal, searchQuery } = this.state;
+  console.log('App ~ isLoading', images);
 
-    if (status === Status.IDLE) {
-      return (
-        <AppDivStyled>
-          <Searchbar onSubmit={this.searchQuerySubmit} />
-          <ToastContainer autoClose={2500} />
-        </AppDivStyled>
-      );
-    }
-    if (status === Status.PENDING) {
-      const nextPage = page > 1;
-      return (
-        <AppDivStyled>
-          <Searchbar />
-          {nextPage && <ImageGallery images={images} />}
-          <Loader />
-          <ToastContainer autoClose={2500} />
-        </AppDivStyled>
-      );
-    }
-
-    if (status === Status.REJECTED) {
-      return (
-        <AppDivStyled>
-          <Searchbar onSubmit={this.searchQuerySubmit} />
-          <NoResultsMessageStyled>
-            No results for <b>"{searchQuery}"</b>. Please type correct search query
-          </NoResultsMessageStyled>
-          <ToastContainer autoClose={2500} />
-        </AppDivStyled>
-      );
-    }
-
-    if (status === Status.RESOLVED) {
-      const notEmptyImagesArray = images?.length > 0;
-      const hasNextPage = totalHits > page * perPage;
-      const needToOpenModal = showModal && Object.keys(showModal).length > 0;
-      return (
-        <AppDivStyled>
-          <Searchbar onSubmit={this.searchQuerySubmit} />
-          {!notEmptyImagesArray && (
-            <NoResultsMessageStyled>
-              No results for <b>"{searchQuery}"</b>. Please type correct search query
-            </NoResultsMessageStyled>
-          )}
-          {notEmptyImagesArray && (
-            <>
-              <ImageGallery images={images} onOpenModal={this.openModal} />
-              <Button hasNextPage={hasNextPage} onLoadMoreImages={this.loadMoreImages}>
-                Load More
-              </Button>
-              {needToOpenModal && (
-                <Modal onClose={this.toggleModal}>
-                  <CloseButtonStyled type="button" onClick={this.toggleModal}>
-                    <AiOutlineClose />
-                  </CloseButtonStyled>
-                  <ModalImgStyled src={showModal.largeImageURL} alt={showModal.alt} />
-                </Modal>
-              )}
-              <ToastContainer autoClose={2500} />
-            </>
-          )}
-        </AppDivStyled>
-      );
-    }
-  }
+  return (
+    <AppDivStyled>
+      <Searchbar onSubmit={searchQuerySubmit} />
+      {isLoading && <Loader />}
+      {isError && (
+        <NoResultsMessageStyled>
+          No results for <b>"{searchQuery}"</b>. Please type correct search query
+        </NoResultsMessageStyled>
+      )}
+      {showGallery && (
+        <>
+          <ImageGallery images={images} onOpenModal={openModal} />
+          <Button hasNextPage={hasNextPage} onLoadMoreImages={loadMoreImages}>
+            Load More
+          </Button>
+        </>
+      )}
+      {needToOpenModal && (
+        <Modal onClose={toggleModal}>
+          <CloseButtonStyled type="button" onClick={toggleModal}>
+            <AiOutlineClose />
+          </CloseButtonStyled>
+          <ModalImgStyled src={showModal.largeImageURL} alt={showModal.alt} />
+        </Modal>
+      )}
+      <ToastContainer autoClose={2500} />
+    </AppDivStyled>
+  );
 }

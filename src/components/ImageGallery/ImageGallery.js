@@ -6,9 +6,9 @@ import {ImageGalleryStyled} from "./ImageGallery.styled";
 export const ImageGallery = ({ images = [{}], onOpenModal }) => {
   return (
     <ImageGalleryStyled>
-      {images.map(image => (
+      {images.map((image,id) => (
         <ImageGalleryItem
-          key={image.id}
+          key={id}
           image={image}
           onOpenModal={onOpenModal}
         />
